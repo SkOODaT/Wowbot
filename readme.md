@@ -16,6 +16,7 @@ Made By SkOODaT/Silvermoon
 Note - Misc Folder Has Discord Emoji Currency Icons In It
 
 [Wow Dev Portal](https://develop.battle.net/documentation/world-of-warcraft)
+
 [Discord Dev Portal](https://discord.com/developers/applications)
 
 ##Currently Features:
