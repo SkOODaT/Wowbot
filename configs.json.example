@@ -1,0 +1,11 @@
+{
+    "DISCORD_GUILD_ID": {
+        "clientID": "",
+        "clientSecret": "",
+        "realmID": "86",
+        "botChannel": "",
+        "goldEmoji": "<:Gold:711717195377410089>",
+        "silverEmoji": "<:Silver:711717196707135539>",
+        "copperEmoji": "<:Copper:711717195650039888>"
+    }
+}
