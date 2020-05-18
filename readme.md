@@ -1,4 +1,4 @@
-# python-wowapi
+# Wowbot
 
 World Of Warcraft Discord Bot 
 Made By SkOODaT/Silvermoon
