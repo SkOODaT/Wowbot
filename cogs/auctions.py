@@ -75,9 +75,9 @@ class AuctionsCog(commands.Cog):
                             'time_left': AHData.get('time_left'),
                             'image_link': imagelink,
                         })
-                        if counter > 30 and not printed:
+                        if counter > 40 and not printed:
                             printed = True
-                            await ctx.send('Processing Alot Of Records....')
+                            await ctx.send('Please Wait, Alot Of Records....')
                         elif counter > 100:
                             break
 
