@@ -30,10 +30,10 @@ class AuctionsCog(commands.Cog):
                    '{:.0f}'.format(copper)+""+self.bot.configs[str(ctx.guild.id)]['copperEmoji']
 
     def get_elem(self, elem):
-        if elem[3][1] is not None:
-            elem = elem[3]
+        if elem[2][1] is not None:
+            elem = elem[2]
         else: 
-            elem = elem[4]
+            elem = elem[3]
         return elem
 
     @commands.command(name='item')
@@ -42,51 +42,57 @@ class AuctionsCog(commands.Cog):
         if ctx.channel.name == self.bot.configs[str(ctx.guild.id)]['botChannel'] or ctx.channel.id == int(self.bot.configs[str(ctx.guild.id)]['botChannel']):
             try:
                 # Request Python Wow API
-                self.Debug('Requesting WoW API....')
+                self.Debug('Requesting WoW API.')
                 await ctx.send('Searching Auction Items....')
                 api = self.WowAPI(ctx)
                 auctions = api.get_auctions('us', namespace='dynamic-us', realm_id=self.bot.configs[str(ctx.guild.id)]['realmID'], locale='en_US')
 
                 # Rebuild The Dictation
-                self.Debug('Building Dict....')
+                self.Debug('ReBuilding Dictation.')
                 counter = 0
                 AHlist = []
                 AllData = auctions.get('auctions')
-                printed = False
                 for AHData in AllData:
                     itemID = AHData.get('item').get('id')
                     if int(itemID) == int(UitemID):
+                        #self.Debug(AHData)
                         counter = counter + 1
-                        itemsInfo = api.get_item_data('us', namespace='static-us', id=itemID, locale='en_US')
-                        #self.Debug(itemsInfo.get('name'))
-                        itemMedia = api.get_item_media('us', namespace='static-us', id=itemID, locale='en_US')
-                        for data2 in itemMedia.get('assets'):
-                            imagelink = data2.get('value')
-                        #self.Debug(imagelink)
-                        print(AHData)
                         AHlist.append({
                             'auction_ID': AHData.get('id'),
-                            'name': itemsInfo.get('name'),
+                            #'name': AHData.get('name'),
                             'item_ID': AHData.get('item').get('id'),
                             'unit_price': AHData.get('unit_price'),
                             'buyout': AHData.get('buyout'),
                             'quantity': AHData.get('quantity'),
                             'pet_level': AHData.get('item').get('pet_level'),
                             'time_left': AHData.get('time_left'),
-                            'image_link': imagelink,
+                            #'image_link': None,
                         })
-                        if counter > 40 and not printed:
-                            printed = True
-                            await ctx.send('Please Wait, Alot Of Records....')
-                        elif counter > 100:
+                        # Break Loop For Excessive Results (What Is Discord Limit?)
+                        if counter > 100:
                             break
-                else:
-                    self.Debug('No Dict Data.')
-                    await ctx.send('No Auction Items Found.')
+
+                # Get Item Name And Image
+                itemsInfo = api.get_item_data('us', namespace='static-us', id=UitemID, locale='en_US')
+                itemname = itemsInfo.get('name')
+                #self.Debug(itemsInfo.get('name'))
+                itemMedia = api.get_item_media('us', namespace='static-us', id=UitemID, locale='en_US')
+                imagelink = ''
+                for data2 in itemMedia.get('assets'):
+                    imagelink = data2.get('value')
+                #self.Debug(imagelink)
+
+                # Let User Know If No Data Found/Return
+                if len(AHlist) == 0:
+                    self.Debug('No Auction Items Found.')
+                    itemURL = 'https://www.wowhead.com/item=' + str(UitemID)
+                    embed = discord.Embed(description='No Auction Items Found For ['+UitemID+'].', colour=0xFF0000)
+                    embed.set_author(name=str(itemname) + ' - ['+UitemID+']', url=itemURL, icon_url=imagelink)
+                    await ctx.send(embed=embed)
                     return
 
                 # Convert The Dictation To A List
-                self.Debug('Converting To List....')
+                self.Debug('Converting Dictation To List.')
                 AHlist2 = []
                 for AHData2 in AHlist:
                     #self.Debug(list(AHData2.items()))
@@ -94,7 +100,7 @@ class AuctionsCog(commands.Cog):
                 #self.Debug(AHlist2)
 
                 # Sort The List And Format For Discord
-                self.Debug('Sorting List....')
+                self.Debug('Sorting Python List.')
                 numResults = len(AHlist2)
                 ctr = 0
                 outputTitle = ''
@@ -103,14 +109,14 @@ class AuctionsCog(commands.Cog):
                 for infos in sorted(AHlist2, key=self.get_elem):
                     ctr += 1
                     auction_ID = infos[0][1]
-                    name = infos[1][1]
-                    item_ID = infos[2][1]
-                    unit_price = infos[3][1]
-                    buyout = infos[4][1]
-                    quantity = infos[5][1]
-                    pet_level = infos[6][1]
-                    time_left = infos[7][1]
-                    image_link = infos[8][1]
+                    #name = infos[1][1]
+                    item_ID = infos[1][1]
+                    unit_price = infos[2][1]
+                    buyout = infos[3][1]
+                    quantity = infos[4][1]
+                    pet_level = infos[5][1]
+                    time_left = infos[6][1]
+                    #image_link = infos[8][1]
                     if unit_price is not None:
                         convertunitprice = self.WowGold(ctx, unit_price)
                     else:
@@ -123,13 +129,13 @@ class AuctionsCog(commands.Cog):
                         pet_level = '[PetLv.' + str(pet_level) + ']'
                     else:
                         pet_level = ''
-                    #self.Debug(auction_ID, name, item_ID, unit_price ,quantity, time_left, image_link)
+                    #self.Debug(auction_ID, item_ID, unit_price ,quantity, time_left)
                     itemURL = 'https://www.wowhead.com/item=' + str(item_ID)
-                    outputTitle = name + ' - [' + str(item_ID) + ']'
+                    outputTitle = str(itemname) + ' - [' + str(item_ID) + ']'
                     output += '[' + str(convertunitprice) + ']  [' + str(convertbuyout) + ']  [Qty.' + str(quantity) + '] ' + pet_level + ' [' + AHtimes[time_left] + ']  [' + str(auction_ID) + ']\n'
                     if len(output) > 1850 or ctr == numResults:
                         embed = discord.Embed(description=output, colour=0x98FB98)
-                        embed.set_author(name=outputTitle, url=itemURL, icon_url=image_link)
+                        embed.set_author(name=outputTitle, url=itemURL, icon_url=imagelink)
                         await ctx.send(embed=embed)
                         if ctr != numResults:
                             output = header
