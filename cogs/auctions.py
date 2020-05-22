@@ -1,13 +1,18 @@
 import discord
 from discord.ext import commands
 from wowapi import WowApi
+import json
 
-AHtimes = {
+AHTimes = {
     'SHORT':      '30m',
     'MEDIUM':     '30m/2h',
     'LONG':       '2h/12h',
     'VERY_LONG':  '12h/48h'
 }
+
+with open('itemdb.json', 'r') as f:
+    jsonData = json.load(f)
+    print("JSON Item Data Loaded")
 
 class AuctionsCog(commands.Cog):
 
@@ -16,8 +21,28 @@ class AuctionsCog(commands.Cog):
         print('Auctions Cog Loaded.')
 
     def WowAPI(self, ctx):
+        # Connect To Wow API
         api = WowApi(self.bot.configs[str(ctx.guild.id)]['clientID'], self.bot.configs[str(ctx.guild.id)]['clientSecret'])
         return api
+
+    def WowAuctionAPI(self, ctx):
+        # Get Auctions Data
+        api = self.WowAPI(ctx)
+        auctions = api.get_auctions('us', namespace='dynamic-us', realm_id=self.bot.configs[str(ctx.guild.id)]['realmID'], locale='en_US')
+        return auctions
+
+    def WowImageAPI(self, ctx, UitemID):
+        # Get Item Name And Image Data
+        api = self.WowAPI(ctx)
+        itemsInfo = api.get_item_data('us', namespace='static-us', id=UitemID, locale='en_US')
+        itemname = itemsInfo.get('name')
+        itemMedia = api.get_item_media('us', namespace='static-us', id=UitemID, locale='en_US')
+        imagelink = ''
+        for data2 in itemMedia.get('assets'):
+            imagelink = data2.get('value')
+        #self.Debug(itemsInfo.get('name'))
+        #self.Debug(imagelink)
+        return itemname, imagelink
 
     def WowGold(self, ctx, value):
         if value is not None:
@@ -32,20 +57,25 @@ class AuctionsCog(commands.Cog):
     def get_elem(self, elem):
         if elem[2][1] is not None:
             elem = elem[2]
-        else: 
+        else:
             elem = elem[3]
         return elem
 
     @commands.command(name='item')
-    async def get_Auctions(self, ctx, UitemID = ""):
+    async def get_Auctions(self, ctx, UitemID):
         """List Silvermoon Auctions, Use !item "IDNumber"."""
         if ctx.channel.name == self.bot.configs[str(ctx.guild.id)]['botChannel'] or ctx.channel.id == int(self.bot.configs[str(ctx.guild.id)]['botChannel']):
             try:
+                # Namer Or ID Check
+                if not UitemID.isdigit():
+                    UitemID = jsonData['itemsdb'][UitemID]
+                elif UitemID.isdigit():
+                    UitemID = UitemID
+
                 # Request Python Wow API
                 self.Debug('Requesting WoW API.')
                 await ctx.send('Searching Auction Items....')
-                api = self.WowAPI(ctx)
-                auctions = api.get_auctions('us', namespace='dynamic-us', realm_id=self.bot.configs[str(ctx.guild.id)]['realmID'], locale='en_US')
+                auctions = self.WowAuctionAPI(ctx)
 
                 # Rebuild The Dictation
                 self.Debug('ReBuilding Dictation.')
@@ -72,24 +102,18 @@ class AuctionsCog(commands.Cog):
                         if counter > 100:
                             break
 
-                # Get Item Name And Image
-                itemsInfo = api.get_item_data('us', namespace='static-us', id=UitemID, locale='en_US')
-                itemname = itemsInfo.get('name')
-                #self.Debug(itemsInfo.get('name'))
-                itemMedia = api.get_item_media('us', namespace='static-us', id=UitemID, locale='en_US')
-                imagelink = ''
-                for data2 in itemMedia.get('assets'):
-                    imagelink = data2.get('value')
-                #self.Debug(imagelink)
-
                 # Let User Know If No Data Found/Return
                 if len(AHlist) == 0:
                     self.Debug('No Auction Items Found.')
+                    itemname, imagelink = self.WowImageAPI(ctx, UitemID)
                     itemURL = 'https://www.wowhead.com/item=' + str(UitemID)
                     embed = discord.Embed(description='No Auction Items Found For ['+UitemID+'].', colour=0xFF0000)
                     embed.set_author(name=str(itemname) + ' - ['+UitemID+']', url=itemURL, icon_url=imagelink)
                     await ctx.send(embed=embed)
                     return
+
+                # Get Item Name And Image
+                itemname, imagelink = self.WowImageAPI(ctx, UitemID)
 
                 # Convert The Dictation To A List
                 self.Debug('Converting Dictation To List.')
@@ -132,7 +156,7 @@ class AuctionsCog(commands.Cog):
                     #self.Debug(auction_ID, item_ID, unit_price ,quantity, time_left)
                     itemURL = 'https://www.wowhead.com/item=' + str(item_ID)
                     outputTitle = str(itemname) + ' - [' + str(item_ID) + ']'
-                    output += '[' + str(convertunitprice) + ']  [' + str(convertbuyout) + ']  [Qty.' + str(quantity) + '] ' + pet_level + ' [' + AHtimes[time_left] + ']  [' + str(auction_ID) + ']\n'
+                    output += '[' + str(convertunitprice) + ']  [' + str(convertbuyout) + ']  [Qty.' + str(quantity) + '] ' + pet_level + ' [' + AHTimes[time_left] + ']  [' + str(auction_ID) + ']\n'
                     if len(output) > 1850 or ctr == numResults:
                         embed = discord.Embed(description=output, colour=0x98FB98)
                         embed.set_author(name=outputTitle, url=itemURL, icon_url=imagelink)
