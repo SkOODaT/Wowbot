@@ -62,11 +62,12 @@ class AuctionsCog(commands.Cog):
         return elem
 
     @commands.command(name='item')
-    async def get_Auctions(self, ctx, UitemID):
+    async def get_Auctions(self, ctx, *UitemID):
         """List Silvermoon Auctions, Use !item "IDNumber"."""
         if ctx.channel.name == self.bot.configs[str(ctx.guild.id)]['botChannel'] or ctx.channel.id == int(self.bot.configs[str(ctx.guild.id)]['botChannel']):
             try:
                 # Namer Or ID Check
+                UitemID = (' '.join(UitemID))
                 if not UitemID.isdigit():
                     UitemID = jsonData['itemsdb'][UitemID]
                 elif UitemID.isdigit():
