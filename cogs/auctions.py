@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from wowapi import WowApi
+from wowapi import WowApiException
 import json
 
 AHTimes = {
@@ -166,9 +167,21 @@ class AuctionsCog(commands.Cog):
                             output = header
 
             # Error Handleing
-            except (RuntimeError, AttributeError, SyntaxError, ImportError, ReferenceError, Warning) as error:
+            except WowApiException as werror:
+                self.Debug('WowAPI Error: ' + str(werror))
+                embed = discord.Embed(description=str(werror), colour=0xFF0000)
+                embed.set_author(name='WowAPI Error')
+                await ctx.send(embed=embed)
+            except KeyError as kerror:
+                self.Debug('Item Not Found: ' + str(kerror))
+                embed = discord.Embed(description=str(kerror), colour=0xFF0000)
+                embed.set_author(name='Item Not Found')
+                await ctx.send(embed=embed)
+            except (RuntimeError, AttributeError, SyntaxError, ImportError, ReferenceError, NameError, Warning) as error:
                 self.Debug(error)
-                await ctx.send('Wowbot Encountered An Error.')
+                embed = discord.Embed(description=str(error), colour=0xFF0000)
+                embed.set_author(name='Wowbot Encountered An Error')
+                await ctx.send(embed=embed)
 
     def Debug(self, value):
         print(value)
