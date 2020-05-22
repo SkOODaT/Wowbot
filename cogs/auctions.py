@@ -80,6 +80,10 @@ class AuctionsCog(commands.Cog):
                             await ctx.send('Please Wait, Alot Of Records....')
                         elif counter > 100:
                             break
+                else:
+                    self.Debug('No Dict Data.')
+                    await ctx.send('No Auction Items Found.')
+                    return
 
                 # Convert The Dictation To A List
                 self.Debug('Converting To List....')
