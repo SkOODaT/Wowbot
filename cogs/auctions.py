@@ -173,9 +173,9 @@ class AuctionsCog(commands.Cog):
                 embed.set_author(name='WowAPI Error')
                 await ctx.send(embed=embed)
             except KeyError as kerror:
-                self.Debug('Item Not Found: ' + str(kerror))
+                self.Debug('Key Error: ' + str(kerror))
                 embed = discord.Embed(description=str(kerror), colour=0xFF0000)
-                embed.set_author(name='Item Not Found')
+                embed.set_author(name='Key Error')
                 await ctx.send(embed=embed)
             except (RuntimeError, AttributeError, SyntaxError, ImportError, ReferenceError, NameError, Warning) as error:
                 self.Debug(error)
