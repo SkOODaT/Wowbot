@@ -15,6 +15,7 @@ initial_extensions = ['cogs.configs',
                       'cogs.events',
                       'cogs.owner',
                       'cogs.auctions',
+                      'cogs.items',
                       'cogs.bosses',
                       'cogs.servers']
 
