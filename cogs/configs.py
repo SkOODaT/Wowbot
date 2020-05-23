@@ -14,6 +14,10 @@ class ConfigsCog(commands.Cog):
         with open('configs.json', 'r') as f:
             self.bot.configs = json.load(f)
         print("Configuration Loaded")
+		
+        with open('itemdb.json', 'r') as f:
+            self.bot.jsonData = json.load(f)
+        print("Item Data Loaded")
 
     def saveConfigs(self):
         with open('configs.json', 'w') as outfile:

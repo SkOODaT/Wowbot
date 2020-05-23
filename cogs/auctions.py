@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from wowapi import WowApi
 from wowapi import WowApiException
-import json
 
 AHTimes = {
     'SHORT':      '30m',
@@ -10,10 +9,6 @@ AHTimes = {
     'LONG':       '2h/12h',
     'VERY_LONG':  '12h/48h'
 }
-
-with open('itemdb.json', 'r') as f:
-    jsonData = json.load(f)
-    print("JSON Item Data Loaded")
 
 class AuctionsCog(commands.Cog):
 
@@ -64,13 +59,13 @@ class AuctionsCog(commands.Cog):
 
     @commands.command(name='item')
     async def get_Auctions(self, ctx, *UitemID):
-        """List Silvermoon Auctions, Use !item "IDNumber"."""
+        """List Silvermoon Auctions, Sorted By UnitPrice Then Buyout."""
         if ctx.channel.name == self.bot.configs[str(ctx.guild.id)]['botChannel'] or ctx.channel.id == int(self.bot.configs[str(ctx.guild.id)]['botChannel']):
             try:
                 # Namer Or ID Check
                 UitemID = (' '.join(UitemID))
                 if not UitemID.isdigit():
-                    UitemID = jsonData['itemsdb'][UitemID]
+                    UitemID = self.bot.jsonData['itemsdb'][UitemID]
                 elif UitemID.isdigit():
                     UitemID = UitemID
 
