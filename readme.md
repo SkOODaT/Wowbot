@@ -21,8 +21,8 @@ Note - Misc Folder Has Discord Emoji Currency Icons In It
 
 ## Currently Features:
 * Silvermon Server Status Cog
-* Auctions Cog Lookup By Item ID Or Name (Add Your Connected Realm ID To Config)
-* Item Lookups Cog
+* Auctions Cog (Lookup By Item ID Or Name) (Add Your Connected Realm ID To Config)
+* Item Lookups Cog (Lookup By Item ID Or Name)
 
 ## Planned Features: 
 * Rework Server Status Lookup Cog
