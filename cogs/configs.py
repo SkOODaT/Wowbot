@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from asyncio import TimeoutError
 import json
+import pprint
 
 class ConfigsCog(commands.Cog):
     """ConfigsCog"""
@@ -24,6 +25,25 @@ class ConfigsCog(commands.Cog):
             json.dump(self.bot.configs, outfile, indent=4)
         print("Configuration Saved")
 
+    def WowGold(self, ctx, value):
+        if value is not None:
+            gold = value / 10000
+            value = value % 10000
+            silver = value / 100
+            copper = value % 100
+            return '{:.0f}'.format(gold)+""+self.bot.configs[str(ctx.guild.id)]['goldEmoji']+" "+ \
+                   '{:.0f}'.format(silver)+""+self.bot.configs[str(ctx.guild.id)]['silverEmoji']+" "+ \
+                   '{:.0f}'.format(copper)+""+self.bot.configs[str(ctx.guild.id)]['copperEmoji']
+
+    def UsePPrint(self, ctx, value):
+        if self.bot.configs[str(ctx.guild.id)]['pprint'] == "True":
+            pp = pprint.PrettyPrinter(indent=4)
+            pp.pprint(value)
+
+    def UseDebug(self, ctx, value):
+        if self.bot.configs[str(ctx.guild.id)]['debug'] == "True":
+            print(value)
+
     @commands.command(name='wowbot')
     @commands.is_owner()
     async def run_config(self, ctx, *, config = ""):
@@ -38,7 +58,9 @@ class ConfigsCog(commands.Cog):
                                                      "botChannel - Set botChannel\n" \
                                                      "goldEmoji - Set Gold Emoji\n" \
                                                      "silverEmoji - Set Silver Emoji\n" \
-                                                     "copperEmoji - Set Copper Emoji```")
+                                                     "copperEmoji - Set Copper Emoji\n" \
+                                                     "pprint - Toggle PPrint (True/False)\n" \
+                                                     "debug - Toggle Debug (True/False)```")
         elif config == "clientID":
             try:
                 await ctx.send("Please enter a response for the `clientID` command. Enter `cancel` to exit.")
@@ -107,6 +129,26 @@ class ConfigsCog(commands.Cog):
                 if msg:
                     pass
                     self.bot.configs[str(ctx.guild.id)]['copperEmoji'] = msg.content
+                    self.saveConfigs()
+            except TimeoutError:
+                await ctx.send("Timeout. not updated")
+        elif config == "pprint":
+            try:
+                await ctx.send("Please enter a response for the `pprint` command.  Enter `cancel` to exit.")
+                msg = await self.bot.wait_for('message', timeout=60.0, check=check)
+                if msg:
+                    pass
+                    self.bot.configs[str(ctx.guild.id)]['pprint'] = msg.content
+                    self.saveConfigs()
+            except TimeoutError:
+                await ctx.send("Timeout. not updated")
+        elif config == "debug":
+            try:
+                await ctx.send("Please enter a response for the `debug` command.  Enter `cancel` to exit.")
+                msg = await self.bot.wait_for('message', timeout=60.0, check=check)
+                if msg:
+                    pass
+                    self.bot.configs[str(ctx.guild.id)]['debug'] = msg.content
                     self.saveConfigs()
             except TimeoutError:
                 await ctx.send("Timeout. not updated")

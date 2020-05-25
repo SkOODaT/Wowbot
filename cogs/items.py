@@ -15,91 +15,140 @@ class ItemsCog(commands.Cog):
         return api
 
     def WowItemAPI(self, ctx, UitemID):
-        # Get Item Name And Image Data
+        # Get Item Info Data
         api = self.WowAPI(ctx)
         itemsInfo = api.get_item_data('us', namespace='static-us', id=UitemID, locale='en_US')
+        return itemsInfo
 
-        itemname = itemsInfo.get('name')
-        quality = itemsInfo.get('quality').get('name')
-        level = itemsInfo.get('level')
-        required_level = itemsInfo.get('required_level')
-        item_class = itemsInfo.get('item_class').get('name')
-        item_subclass = itemsInfo.get('item_subclass').get('name')
-        inventory_type = itemsInfo.get('inventory_type').get('name')
-        level_display_string = itemsInfo.get('preview_item').get('level').get('display_string')
-		
-        # Rep Stuff
-        reputation = itemsInfo.get('preview_item').get('requirements').get('reputation').get('faction').get('name')
-        reputation_display_string = itemsInfo.get('preview_item').get('requirements').get('reputation').get('display_string')
-        min_reputation_level = itemsInfo.get('preview_item').get('requirements').get('reputation').get('min_reputation_level')
-
-        #self.Debug(itemname)
-
+    def WowImageAPI(self, ctx, UitemID):
+        # Get Item Image Data
+        api = self.WowAPI(ctx)
         itemMedia = api.get_item_media('us', namespace='static-us', id=UitemID, locale='en_US')
         imagelink = ''
         for data2 in itemMedia.get('assets'):
             imagelink = data2.get('value')
-        #self.Debug(itemsInfo.get('name'))
-        #self.Debug(imagelink)
-        return itemname, quality, level, required_level, item_class, item_subclass, \
-            inventory_type, level_display_string, reputation, reputation_display_string, \
-            min_reputation_level, imagelink
+        return imagelink
 
-    def WowGold(self, ctx, value):
-        if value is not None:
-            gold = value / 10000
-            value = value % 10000
-            silver = value / 100
-            copper = value % 100
-            return '{:.0f}'.format(gold)+""+self.bot.configs[str(ctx.guild.id)]['goldEmoji']+" "+ \
-                   '{:.0f}'.format(silver)+""+self.bot.configs[str(ctx.guild.id)]['silverEmoji']+" "+ \
-                   '{:.0f}'.format(copper)+""+self.bot.configs[str(ctx.guild.id)]['copperEmoji']
+    def WowGetInfo(self, ctx, itemsInfo):
+        # Get Item Image Data
+        itemname = itemsInfo.get('name')
+        quality = itemsInfo.get('quality').get('name')
+        level = itemsInfo.get('level')
+        required_level = itemsInfo.get('required_level')
+        description = itemsInfo.get('description')
+        item_class = itemsInfo.get('item_class').get('name')
+        item_subclass = itemsInfo.get('item_subclass').get('name')
+        inventory_type = itemsInfo.get('inventory_type').get('name')
+        max_count = itemsInfo.get('max_count')
+        purchase_price = itemsInfo.get('purchase_price')
+        sell_price = itemsInfo.get('sell_price')
+
+        level_display_string = None
+        spells_id = None
+        spells_description = None
+        display_string = None
+        reputationname = None
+        reputation_display_string = None
+        min_reputation_level = None
+
+        preview_item = itemsInfo.get('preview_item')
+        if preview_item is not None:
+            level2 = preview_item.get('level')
+            spells = preview_item.get('spells')
+            requirements = preview_item.get('requirements')
+            if level2 is not None:
+                level_display_string = level2.get('display_string')
+            if spells is not None:
+                for SD in spells:
+                    spells_id = SD.get('spell').get('id')
+                    spells_description = SD.get('description')
+            if requirements is not None:
+                ability = requirements.get('ability')
+                reputation = requirements.get('reputation')
+                if ability is not None:
+                    display_string = ability.get('display_string')
+                if reputation is not None:
+                    reputationname = reputation.get('faction').get('name')
+                    reputation_display_string = reputation.get('faction').get('display_string')
+                    min_reputation_level = reputation.get('faction').get('min_reputation_level')
+
+        return itemname, quality, level, required_level, description, item_class, item_subclass, inventory_type, \
+               reputationname, level_display_string, display_string, max_count, spells_id, spells_description, \
+               reputation_display_string, min_reputation_level, purchase_price, sell_price
 
     @commands.command(name='iteminfo')
-    async def get_Auctions(self, ctx, *UitemID):
-        """List ItemID By Item Name."""
+    async def get_Items(self, ctx, *UitemID):
+        """List Item Info."""
         if ctx.channel.name == self.bot.configs[str(ctx.guild.id)]['botChannel'] or ctx.channel.id == int(self.bot.configs[str(ctx.guild.id)]['botChannel']):
             try:
                 # Namer Or ID Check
                 UitemID = (' '.join(UitemID))
                 if not UitemID.isdigit():
                     UitemID = self.bot.jsonData['itemsdb'][UitemID]
-                self.Debug(UitemID)
                 if UitemID.isdigit():
                     UitemID = UitemID
 
                 # Request Python Wow API
-                self.Debug('Requesting WoW API.')
+                self.PrintData('Requesting WoW API.')
                 await ctx.send('Searching Items....')
-                 # Get Item Name And Image
-                itemname, quality, level, required_level, item_class, item_subclass, \
-                    inventory_type, level_display_string, reputation, reputation_display_string, \
-                    min_reputation_level, imagelink = self.WowItemAPI(ctx, UitemID)
+
+                 # Get Item Infos
+                itemsInfo = self.WowItemAPI(ctx, UitemID)
+                itemsImage = self.WowImageAPI(ctx, UitemID)
+
+                # Debug pprint JSON Data
+                self.bot.get_cog("ConfigsCog").UsePPrint(ctx, itemsInfo)
+
+                # Get Item Infos
+                itemname, quality, level, required_level, description, item_class, item_subclass, inventory_type, \
+                reputationname, level_display_string, display_string, max_count, spells_id, spells_description, \
+                reputation_display_string, min_reputation_level, purchase_price, sell_price = self.WowGetInfo(ctx, itemsInfo)
                 itemURL = 'https://www.wowhead.com/item=' + str(UitemID)
-                output = '['+str(UitemID)+']\n'+'['+quality+']\n'+'['+str(level)+']\n'+'['+str(required_level)+']\n'+'['+item_class+']\n'+'['+item_subclass+']\n'+'['+inventory_type+']\n'+'['+level_display_string+']\n' + \
-				         '['+reputation+']\n'+'['+reputation_display_string+']\n'+'['+str(min_reputation_level)+']\n'
+                output = 'Item ID: ['+str(UitemID)+']\n' + \
+				         'Spell ID: ['+str(spells_id)+']\n' + \
+                         'Quality: ['+str(quality)+']\n' + \
+                         'Level: ['+str(level)+']\n' + \
+                         'Required Level: ['+str(required_level)+']\n' + \
+                         'Item Class: ['+str(item_class)+']\n' + \
+                         'Item Sub Class: ['+str(item_subclass)+']\n' + \
+                         'Inventory Type: ['+str(inventory_type)+']\n' + \
+                         'Details?: ['+str(display_string)+']\n' + \
+                         'Level Details?: ['+str(level_display_string)+']\n' + \
+                         'Max Count: ['+str(max_count)+']\n' + \
+                         '**Description Info:**\n' + \
+                         'Description: ['+str(description)+']\n' + \
+                         'Spells Description: ['+str(spells_description)+']\n' + \
+                         '**Reputation Info:**\n' + \
+                         'Rep Faction Name: ['+str(reputationname)+']\n' + \
+                         'Rep Details?: ['+str(reputation_display_string)+']\n' + \
+                         'Rep Min Level: ['+str(min_reputation_level)+']\n' + \
+                         '**Price Info:**\n' + \
+                         'Purchase Price: ['+self.bot.get_cog("ConfigsCog").WowGold(ctx, purchase_price)+']\n' + \
+                         'Sell Price: ['+self.bot.get_cog("ConfigsCog").WowGold(ctx, sell_price)+']\n'
+
+                # Output To Discord
                 embed = discord.Embed(description=output, colour=0x98FB98)
-                embed.set_author(name=str(itemname) + ' - ['+UitemID+']', url=itemURL, icon_url=imagelink)
+                embed.set_author(name=str(itemname) + ' - ['+UitemID+']', url=itemURL, icon_url=itemsImage)
                 await ctx.send(embed=embed)
 
             # Error Handleing
             except WowApiException as werror:
-                self.Debug('WowAPI Error: ' + str(werror))
+                self.PrintData('WowAPI Error: ' + str(werror))
                 embed = discord.Embed(description=str(werror), colour=0xFF0000)
                 embed.set_author(name='WowAPI Error')
                 await ctx.send(embed=embed)
             except KeyError as kerror:
-                self.Debug('Key Error: ' + str(kerror))
+                self.PrintData('Key Error: ' + str(kerror))
                 embed = discord.Embed(description=str(kerror), colour=0xFF0000)
                 embed.set_author(name='Key Error')
                 await ctx.send(embed=embed)
             except (RuntimeError, AttributeError, SyntaxError, ImportError, ReferenceError, NameError, Warning) as error:
-                self.Debug(error)
+                self.PrintData(error)
                 embed = discord.Embed(description=str(error), colour=0xFF0000)
                 embed.set_author(name='Wowbot Encountered An Error')
                 await ctx.send(embed=embed)
 
-    def Debug(self, value):
+    def PrintData(self, value):
         print(value)
 
 def setup(bot):
